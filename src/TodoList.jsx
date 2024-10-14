@@ -1,7 +1,10 @@
-import { useState } from "react";
-import './Header.css'
-import './App.css'
-import './Description.css'
+import './App.css';
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-material.css"; // Material Design theme
+
+import { useRef, useState } from "react";
+import { AgGridReact } from "ag-grid-react";
+
 function TodoList() {
 
 /*
@@ -15,59 +18,72 @@ Tutustu ag-grid komponentin dokumentaatioon ja kytke seuraavat kaksi ominaisuutt
 
 */
 
+const [columnDefs, setColumnDefs] = useState([
+  {field: 'desc', sortable: false, filter: true, floatingFilter: true},
+  {field: 'priority', filter: true, floatingFilter: true,
+    cellStyle: params => params.value === "High" ? {color: 'red'} : {color: 'black'} 
+  },
+  {field: 'date', filter: true, floatingFilter: true}
+]);
+
 const [info, setInfo] =useState({desc:"", date: ""});
 const [todos, setTodos] = useState([]);
+const gridRef = useRef();
 
-const handleDescription = (event) => {
-    setInfo({...info, desc: event.target.value});
-};
-
-const handleDate = (event) => {
-    setInfo({...info, date: event.target.value});
-};
-
-const deleteTodo = (index) => {
-  setTodos(todos.filter((todo, i) => i !== index));
-}
 
 const addTodo = () => {
-  
+
   if (!info.desc || !info.date){
-    alert("Write a description and a date")
+      alert("Write a description and a date")
   }
 
   else {
     setTodos([...todos, {...info}]);
-    setInfo({desc:"", date: ""});
-  }
+    setInfo({desc:"", priority:"", date: ""});
+   }
 
 };
 
+const handleDelete = () => {
+  if (gridRef.current.getSelectedNodes().length > 0) {
+    setTodos(todos.filter((todo, index) => 
+      index != gridRef.current.getSelectedNodes()[0].id))
+  }
+  else {
+    alert('Select a row first!');
+  }
+};
+
+
     return(
-        //Note to self: using deleteTodo(index) without arrow function will invoke the function when page renders
-        //fieldset & ledend from article: https://css-tricks.com/how-to-add-text-in-borders-using-basic-html-elements/
+        
         <>
-         <header className='header'>
-          <h2>Simple TodoList</h2>
-          </header>
-        <fieldset>
-          <legend>Add todo:</legend>
-            Description: <input onChange={handleDescription} value={info.desc} />
-            Date: <input onChange={handleDate} value={info.date} />
-            <button onClick={addTodo}>Add</button>   
-        </fieldset>
-        <table className='App'>
-          <thead>
-            <tr><th>Date</th><th>Description</th><th>&nbsp;</th></tr>
-          </thead>
-          <tbody>
-            {todos.map((todo, index) => (
-            <tr>
-              <td>{todo.date}</td><td>{todo.desc} </td><td><button onClick={() => deleteTodo(index)}>Delete</button></td>
-            </tr>
-            ))}
-          </tbody>
-        </table>
+         
+          <input 
+      placeholder="Description" 
+      onChange={e => setInfo({...info, desc: e.target.value })} 
+      value={info.desc} />
+    <input 
+      placeholder="Priority" 
+      onChange={e => setInfo({...info, priority: e.target.value })} 
+      value={info.priority} /> 
+    <input 
+      placeholder="Date" type="date"
+      onChange={e => setInfo({...info, date: e.target.value })} 
+      value={info.date} />
+    <button onClick={addTodo}>Add</button>  
+    <button onClick={handleDelete}>Delete</button> 
+
+
+    <div className="ag-theme-material" style={{width: 700, height: 500}}>
+      <AgGridReact 
+        ref={gridRef}
+        onGridReady={ params => gridRef.current = params.api }
+        rowData={todos}
+        columnDefs={columnDefs}
+        rowSelection="single"
+      />
+    </div> 
 
       </>
 
